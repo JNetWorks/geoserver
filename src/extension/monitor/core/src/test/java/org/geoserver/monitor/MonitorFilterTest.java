@@ -9,7 +9,6 @@ import static org.junit.Assert.*;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.util.Collection;
 import java.util.Collections;
 
 import javax.servlet.ServletException;
@@ -22,7 +21,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import junit.framework.TestCase;
 import static org.easymock.EasyMock.*;
 
 import org.springframework.mock.web.MockFilterChain;
@@ -41,8 +39,11 @@ public class MonitorFilterTest {
     MonitorFilter filter;
     MockFilterChain chain;
     
-    static final int MAX_BODY_SIZE = 10;
-    static final int LONG_BODY_SIZE = 3*MAX_BODY_SIZE;
+    static final int MAX_REQUEST_BODY_SIZE  = 10;
+    static final int LONG_REQUEST_BODY_SIZE = 3* MAX_REQUEST_BODY_SIZE;
+
+    static final int MAX_RESPONSE_BODY_SIZE  = 10;
+    static final int LONG_RESPONSE_BODY_SIZE = 3* MAX_RESPONSE_BODY_SIZE;
     
     @Before
     public void setUp() throws Exception {
@@ -54,12 +55,13 @@ public class MonitorFilterTest {
             @Override
             public void service(ServletRequest req, ServletResponse res) throws ServletException,
                     IOException {
-                req.getInputStream().read(new byte[LONG_BODY_SIZE]);
+                req.getInputStream().read(new byte[LONG_REQUEST_BODY_SIZE]);
                 res.getOutputStream().write(new byte[0]);
             }
         });
         
-        filter.monitor.config.props.put("maxBodySize", Integer.toString(MAX_BODY_SIZE)); // Ensure the configured property is correct for the tests
+        filter.monitor.config.props.put("maxRequestBodySize", Integer.toString(MAX_REQUEST_BODY_SIZE)); // Ensure the configured property is correct for the tests
+        filter.monitor.config.props.put("maxResponseBodySize", Integer.toString(MAX_RESPONSE_BODY_SIZE)); // Ensure the configured property is correct for the tests
     }
 
     @After
@@ -82,17 +84,20 @@ public class MonitorFilterTest {
     
     @Test    
     public void testWithBody() throws Exception {
+        final String requestBody = "baz";
+        final String responseBody = "hello world!";
+
         chain = new MockFilterChain(new HttpServlet() {
             @Override
             public void service(ServletRequest req, ServletResponse res) throws ServletException,
                     IOException {
-                req.getInputStream().read(new byte[LONG_BODY_SIZE]);
-                res.getOutputStream().write("hello".getBytes());
+                req.getInputStream().read(new byte[LONG_REQUEST_BODY_SIZE]);
+                res.getOutputStream().write(responseBody.getBytes());
             }
         });
         
         
-        HttpServletRequest req = request("POST", "/bar/foo", "78.56.34.12", "baz", null);
+        HttpServletRequest req = request("POST", "/bar/foo", "78.56.34.12", requestBody, null);
         filter.doFilter(req, response(), chain);
         
         RequestData data = dao.getLast();
@@ -101,41 +106,55 @@ public class MonitorFilterTest {
         assertEquals("78.56.34.12", data.getRemoteAddr());
         assertNull(data.getHttpReferer());
         
-        assertEquals(new String(data.getBody()), "baz");
-        assertEquals(3, data.getBodyContentLength());
-        assertEquals(5, data.getResponseLength());
+        assertEquals(new String(data.getRequestBody()), requestBody);
+        assertEquals(requestBody.length(), data.getRequestContentLength());
+        assertEquals(new String(data.getResponseBody()), responseBody.substring(0, MAX_RESPONSE_BODY_SIZE));
+        assertEquals(responseBody.length(), data.getResponseLength());
       
     }
     
     @Test
     public void testWithLongBody() throws Exception {
+        StringBuilder a = new StringBuilder();
+
+        for (int i = 0; i< MAX_REQUEST_BODY_SIZE; i++) {
+            a.append('a');
+        }
+        String wanted_response_body = a.toString();
+        for (int i = MAX_REQUEST_BODY_SIZE; i< LONG_REQUEST_BODY_SIZE; i++) {
+            a.append('a');
+        }
+        String given_response_body = a.toString();
+
         chain = new MockFilterChain(new HttpServlet() {
             @Override
             public void service(ServletRequest req, ServletResponse res) throws ServletException,
                     IOException {
-                req.getInputStream().read(new byte[LONG_BODY_SIZE]);
-                res.getOutputStream().write("hello".getBytes());
+                req.getInputStream().read(new byte[LONG_REQUEST_BODY_SIZE]);
+                res.getOutputStream().write(given_response_body.getBytes());
             }
         });
         
         StringBuilder b = new StringBuilder();
         
-        for (int i=0; i<MAX_BODY_SIZE; i++) {
+        for (int i = 0; i< MAX_REQUEST_BODY_SIZE; i++) {
             b.append('b');
         }
-        String wanted_body = b.toString();
-        for (int i=MAX_BODY_SIZE; i<LONG_BODY_SIZE; i++) {
+        String wanted_request_body = b.toString();
+        for (int i = MAX_REQUEST_BODY_SIZE; i< LONG_REQUEST_BODY_SIZE; i++) {
             b.append('b');
         }
-        String given_body = b.toString();
+        String given_request_body = b.toString();
         
-        HttpServletRequest req = request("POST", "/bar/foo", "78.56.34.12", given_body, null);
+        HttpServletRequest req = request("POST", "/bar/foo", "78.56.34.12", given_request_body, null);
         filter.doFilter(req, response(), chain);
         
         RequestData data = dao.getLast();
         
-        assertEquals(wanted_body, new String(data.getBody())); // Should be trimmed to the maximum length
-        assertEquals(LONG_BODY_SIZE, data.getBodyContentLength()); // Should be the full length, not the trimmed one
+        assertEquals(wanted_request_body, new String(data.getRequestBody())); // Should be trimmed to the maximum length
+        assertEquals(LONG_REQUEST_BODY_SIZE, data.getRequestContentLength()); // Should be the full length, not the trimmed one
+        assertEquals(wanted_response_body, new String(data.getResponseBody())); // Should be trimmed to the maximum length
+        assertEquals(LONG_RESPONSE_BODY_SIZE, data.getRequestContentLength()); // Should be the full length, not the trimmed one
       
     }
     
@@ -143,15 +162,25 @@ public class MonitorFilterTest {
     public void testWithUnboundedBody() throws Exception {
         final int UNBOUNDED_BODY_SIZE= 10000; // Something really big
         
-        filter.monitor.config.props.put("maxBodySize", Integer.toString(UNBOUNDED_BODY_SIZE)); // Ensure the configured property is correct for the tests
-        
+        filter.monitor.config.props.put("maxRequestBodySize", Integer.toString(UNBOUNDED_BODY_SIZE)); // Ensure the configured property is correct for the tests
+        filter.monitor.config.props.put("maxResponseBodySize", Integer.toString(UNBOUNDED_BODY_SIZE)); // Ensure the configured property is correct for the tests
+
+        StringBuilder a = new StringBuilder();
+
+        for (int i=0; i<UNBOUNDED_BODY_SIZE; i++) {
+            a.append(i%10);
+        }
+
+        String wanted_response_body = a.toString();
+        String given_response_body = a.toString();
+
         chain = new MockFilterChain(new HttpServlet() {
             @Override
             public void service(ServletRequest req, ServletResponse res) throws ServletException,
                     IOException {
                 while(req.getInputStream().read()!=-1); // "read" the stream until the end.
                 req.getInputStream().read();
-                res.getOutputStream().write("hello".getBytes());
+                res.getOutputStream().write(given_response_body.getBytes());
             }
         });
         
@@ -161,17 +190,19 @@ public class MonitorFilterTest {
             b.append(i%10);
         }
         
-        String wanted_body = b.toString();
-        String given_body = b.toString();
+        String wanted_request_body = b.toString();
+        String given_request_body = b.toString();
         
-        HttpServletRequest req = request("POST", "/bar/foo", "78.56.34.12", given_body, null);
+        HttpServletRequest req = request("POST", "/bar/foo", "78.56.34.12", given_request_body, null);
         filter.doFilter(req, response(), chain);
         
         RequestData data = dao.getLast();
         
-        assertEquals(wanted_body, new String(data.getBody())); // Should be trimmed to the maximum length
-        assertEquals(UNBOUNDED_BODY_SIZE, data.getBodyContentLength()); // Should be the full length, not the trimmed one
-      
+        assertEquals(wanted_request_body, new String(data.getRequestBody())); // Should be trimmed to the maximum length
+        assertEquals(UNBOUNDED_BODY_SIZE, data.getRequestContentLength()); // Should be the full length, not the trimmed one
+        assertEquals(wanted_response_body, new String(data.getResponseBody())); // Should be trimmed to the maximum length
+        assertEquals(UNBOUNDED_BODY_SIZE, data.getResponseLength()); // Should be the full length, not the trimmed one
+
     }
    
     @Test

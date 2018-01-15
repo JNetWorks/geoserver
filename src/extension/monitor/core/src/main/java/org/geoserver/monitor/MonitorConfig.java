@@ -67,7 +67,8 @@ public class MonitorConfig implements GeoServerPluginConfigurator, ApplicationCo
         props = new Properties();
         props.put("storage", "memory");
         props.put("mode", "history");
-        props.put("maxBodySize", "1024");
+        props.put("maxRequestBodySize", "1024");
+        props.put("maxResponseBodySize", "1024");
         props.put("bboxMode", "no_wfs");
         props.put("bboxCrs", "EPSG:4326");
 
@@ -100,8 +101,12 @@ public class MonitorConfig implements GeoServerPluginConfigurator, ApplicationCo
         return m;
     }
     
-    public long getMaxBodySize() {
-        return Long.parseLong(props().getProperty("maxBodySize", String.valueOf(1024)));
+    public long getMaxRequestBodySize() {
+        return Long.parseLong(props().getProperty("maxRequestBodySize", String.valueOf(1024)));
+    }
+
+    public long getMaxResponseBodySize() {
+        return Long.parseLong(props().getProperty("maxResponseBodySize", String.valueOf(1024)));
     }
     
     public CoordinateReferenceSystem getBboxCrs() {

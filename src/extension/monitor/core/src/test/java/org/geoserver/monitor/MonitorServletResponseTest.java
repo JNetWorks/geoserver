@@ -13,6 +13,7 @@ import java.io.IOException;
 
 import javax.servlet.ServletOutputStream;
 
+import junit.framework.Assert;
 import org.geoserver.monitor.MonitorServletResponse.MonitorOutputStream;
 import org.junit.Test;
 import org.springframework.mock.web.DelegatingServletOutputStream;
@@ -25,10 +26,14 @@ public class MonitorServletResponseTest {
         
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         ServletOutputStream mock = new DelegatingServletOutputStream(bos);
-        MonitorOutputStream out = new MonitorOutputStream(mock);
+        MonitorOutputStream out = new MonitorOutputStream(mock, Long.MAX_VALUE);
         out.write(data);
         
         assertEquals(data.length, bos.size());
         assertEquals(data.length, out.getBytesWritten());
+
+        for (int i = 0; i < data.length; i++) {
+            assertEquals(data[i], data[i]);
+        }
     }
 }

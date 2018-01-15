@@ -71,19 +71,24 @@ public class RequestData implements Serializable {
     private String queryString;
 
     /**
-     * The body of the request in the case of a PUT or POST
+     * The body of the response in the case of a PUT or POST
      */
-    private byte[] body;
+    private byte[] requestBody;
     
     /**
-     * The length of the request body in teh case of a PUT or POST
+     * The length of the request requestBody in teh case of a PUT or POST
      */
-    private long bodyContentLength;
+    private long requestContentLength;
     
     /**
-     * The mime type of the request body
+     * The mime type of the request requestBody
      */
-    private String bodyContentType;
+    private String requestContentType;
+
+    /**
+     * The body of the response in the case of a PUT or POST
+     */
+    private byte[] responseBody;
     
     /**
      * The HTTP method of the request
@@ -260,43 +265,65 @@ public class RequestData implements Serializable {
     }
 
     /**
-     * The body of the HTTP request
-     * 
-     * May be trimmed to a maximum length.  If so, check getBodyContentLength for the length of the
+     * The body of the HTTP response
+     *
+     * May be trimmed to a maximum length.  If so, check getRequestContentLength for the length of the
      * untrimmed body.
      */
-    public byte[] getBody() {
-        return body;
+    public byte[] getRequestBody() {
+        return requestBody;
     }
 
-    public void setBody(byte[] body) {
-        this.body = body;
+    public void setRequestBody(byte[] body) {
+        this.requestBody = body;
     }
 
-    public long getBodyContentLength() {
-        return bodyContentLength;
+    public long getRequestContentLength() {
+        return requestContentLength;
     }
-    
-    public void setBodyContentLength(long bodyContentLength) {
-        this.bodyContentLength = bodyContentLength;
+
+    public void setRequestContentLength(long bodyContentLength) {
+        this.requestContentLength = bodyContentLength;
     }
-    
-    public String getBodyContentType() {
-        return bodyContentType;
+
+    public String getRequestContentType() {
+        return requestContentType;
     }
-    
-    public void setBodyContentType(String bodyContentType) {
-        this.bodyContentType = bodyContentType;
+
+    public void setRequestContentType(String bodyContentType) {
+        this.requestContentType = bodyContentType;
     }
-    
-    public String getBodyAsString() {
-        if(body != null) {
-            return new String(body);
+
+    public String getRequestBodyAsString() {
+        if(requestBody != null) {
+            return new String(requestBody);
         } else {
             return null;
         }
     }
-    
+
+    /**
+     * The body of the HTTP request
+     *
+     * May be trimmed to a maximum length.  If so, check getResponseBodyContentLength for the length of the
+     * untrimmed body.
+     */
+    public byte[] getResponseBody() {
+        return responseBody;
+    }
+
+    public void setResponseBody(byte[] responseBody) {
+        this.responseBody = responseBody;
+    }
+
+    public String getResponseBodyAsString() {
+        if(responseBody != null) {
+            return new String(responseBody);
+        } else {
+            return null;
+        }
+    }
+
     public String getHttpMethod() {
         return httpMethod;
     }
@@ -496,7 +523,8 @@ public class RequestData implements Serializable {
         clone.setStatus(status);
         clone.setPath(path);
         clone.setQueryString(queryString);
-        clone.setBody(body);
+        clone.setRequestBody(requestBody);
+        clone.setResponseBody(responseBody);
         clone.setHttpMethod(httpMethod);
         clone.setStartTime(startTime);
         clone.setEndTime(endTime);

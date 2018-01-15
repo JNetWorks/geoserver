@@ -77,7 +77,7 @@ public class MonitorServletRequest extends HttpServletRequestWrapper {
         public MonitorInputStream(ServletInputStream delegate, long maxSize) {
             this.delegate = delegate;
             this.maxSize = maxSize;
-            if (maxSize > 0) {
+            if (maxSize != 0) {
                 buffer = new ByteArrayOutputStream();
             }
         }

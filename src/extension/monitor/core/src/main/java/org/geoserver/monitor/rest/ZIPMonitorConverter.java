@@ -75,10 +75,10 @@ public class ZIPMonitorConverter extends BaseMonitorConverter {
             boolean postfix) throws IOException {
 
         long id = data.getId();
-        if (body && data.getBody() != null) {
+        if (body && data.getRequestBody() != null) {
             // TODO: figure out the proper extension for the body file
             zout.putNextEntry(new ZipEntry(postfix ? "body_" + id + ".txt" : "body.txt"));
-            zout.write(data.getBody());
+            zout.write(data.getRequestBody());
         }
         if (error && data.getError() != null) {
             zout.putNextEntry(new ZipEntry(postfix ? "error_" + id + ".txt" : "error.txt"));

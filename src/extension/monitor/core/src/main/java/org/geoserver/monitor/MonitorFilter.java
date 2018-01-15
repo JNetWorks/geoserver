@@ -5,6 +5,21 @@
  */
 package org.geoserver.monitor;
 
+import org.geoserver.filters.GeoServerFilter;
+import org.geoserver.monitor.RequestData.Status;
+import org.geoserver.platform.GeoServerExtensions;
+import org.geotools.util.logging.Logging;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
+
+import javax.servlet.FilterChain;
+import javax.servlet.FilterConfig;
+import javax.servlet.ServletException;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.net.URLDecoder;
 import java.util.ArrayList;
@@ -15,22 +30,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-import javax.servlet.FilterChain;
-import javax.servlet.FilterConfig;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import org.geoserver.filters.GeoServerFilter;
-import org.geoserver.monitor.RequestData.Status;
-import org.geoserver.platform.GeoServerExtensions;
-import org.geotools.util.logging.Logging;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 
 public class MonitorFilter implements GeoServerFilter {
 
@@ -98,9 +97,9 @@ public class MonitorFilter implements GeoServerFilter {
         }
         
         data.setHttpMethod(req.getMethod());
-        data.setBodyContentLength(req.getContentLength());
-        data.setBodyContentType(req.getContentType());
-        
+        data.setRequestContentLength(req.getContentLength());
+        data.setRequestContentType(req.getContentType());
+
         String serverName = System.getProperty("http.serverName");
         if (serverName == null) {
             serverName = req.getServerName();
@@ -110,8 +109,7 @@ public class MonitorFilter implements GeoServerFilter {
         data.setRemoteAddr(getRemoteAddr(req));
         data.setStatus(Status.RUNNING);
         data.setHttpReferer(getHttpReferer(req));
-        
-        
+
         if (SecurityContextHolder.getContext() != null
                 && SecurityContextHolder.getContext().getAuthentication() != null) {
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -133,11 +131,11 @@ public class MonitorFilter implements GeoServerFilter {
         data.setRemoteUserAgent(req.getHeader("user-agent"));
 
         //wrap the request and response
-        request = new MonitorServletRequest(req, monitor.getConfig().getMaxBodySize());
-        response = new MonitorServletResponse(resp);
-        
+        request = new MonitorServletRequest(req, monitor.getConfig().getMaxRequestBodySize());
+        response = new MonitorServletResponse(resp, monitor.getConfig().getMaxResponseBodySize());
+
         monitor.update();
-        
+
         //execute the request
         Throwable error = null;
         try {
@@ -146,36 +144,37 @@ public class MonitorFilter implements GeoServerFilter {
         catch(Throwable t) {
             error = t;
         }
-        
+
         data = monitor.current();
-        
-        
-        data.setBody(getBody((MonitorServletRequest) request));
-        data.setBodyContentLength(((MonitorServletRequest)request).getBytesRead());
+
+        data.setRequestBody(((MonitorServletRequest) request).getBodyContent());
+        data.setRequestContentLength(((MonitorServletRequest) request).getBytesRead());
+
         data.setResponseContentType(response.getContentType());
-        data.setResponseLength(((MonitorServletResponse)response).getContentLength());
-        data.setResponseStatus(((MonitorServletResponse)response).getStatus());
-        
+        data.setResponseBody(((MonitorServletResponse) response).getBodyContent());
+        data.setResponseLength(((MonitorServletResponse) response).getContentLength());
+        data.setResponseStatus(((MonitorServletResponse) response).getStatus());
+
         if (error != null) {
             data.setStatus(Status.FAILED);
             data.setErrorMessage(error.getLocalizedMessage());
             data.setError(error);
         }
-        
+
         if (data.getStatus() != Status.FAILED) {
             data.setStatus(Status.FINISHED);
         }
-        
+
         data.setEndTime(new Date());
         data.setTotalTime(data.getEndTime().getTime() - data.getStartTime().getTime());
         monitor.update();
         data = monitor.current();
-        
+
         monitor.complete();
-        
+
         //post processing
         postProcessExecutor.execute(new PostProcessTask(monitor, data, req, resp));
-        
+
         if (error != null) {
             if (error instanceof RuntimeException) {
                 throw (RuntimeException)error;
@@ -211,22 +210,7 @@ public class MonitorFilter implements GeoServerFilter {
         
         return referer;
     }
-    
-    // Get the body and trim to the maximum allowable size if necessary
-    byte[] getBody(HttpServletRequest req) {
-        long maxBodyLength = monitor.config.getMaxBodySize();
-        if (maxBodyLength == 0) return null;
-        try {
-            byte[] body=((MonitorServletRequest)req).getBodyContent(); // TODO: trimming at this point may now be redundant
-            if(body!=null && maxBodyLength!=MonitorServletRequest.BODY_SIZE_UNBOUNDED && body.length>maxBodyLength)
-                body=Arrays.copyOfRange(body, 0, (int) maxBodyLength);
-            return body;
-        } catch (IOException ex) {
-            LOGGER.log(Level.WARNING, "Could not read request body", ex);
-            return null;
-        }
-    }
-    
+
     static class PostProcessTask implements Runnable {
 
         Monitor monitor;

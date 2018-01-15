@@ -7,10 +7,15 @@
    <Resources>${resourcesList!""}</Resources>
    <Path>${path!""}</Path>
    <QueryString>${queryString!""}</QueryString>
-   <#if bodyAsString??>
-   <Body>
-   ${bodyAsString}
-   </Body>
+   <#if requestBodyAsString??>
+   <RequestBody>
+      ${requestBodyAsString}
+   </RequestBody>
+   </#if>
+   <#if responseBodyAsString??>
+   <ResponseBody>
+      ${responseBodyAsString}
+   </ResponseBody>
    </#if>
    <HttpMethod>${httpMethod!""}</HttpMethod>
    <StartTime>${startTime?datetime?iso_utc_ms}</StartTime>

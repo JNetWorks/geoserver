@@ -5,6 +5,7 @@
  */
 package org.geoserver.monitor;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 
@@ -14,11 +15,24 @@ import javax.servlet.http.HttpServletResponseWrapper;
 
 public class MonitorServletResponse extends HttpServletResponseWrapper {
 
+    /**
+     * Don't restrict the maximum length of a response body.
+     */
+    public static final long BODY_SIZE_UNBOUNDED = -1;
+
     MonitorOutputStream output;
     int status = 200;
+
+    long maxSize;
     
-    public MonitorServletResponse(HttpServletResponse response) {
+    public MonitorServletResponse(HttpServletResponse response, long maxSize) {
         super(response);
+        this.maxSize = maxSize;
+    }
+
+    public byte[] getBodyContent() throws IOException {
+        MonitorOutputStream stream = getOutputStream();
+        return stream.getData();
     }
     
     public long getContentLength() {
@@ -30,9 +44,9 @@ public class MonitorServletResponse extends HttpServletResponseWrapper {
     }
     
     @Override
-    public ServletOutputStream getOutputStream() throws IOException {
+    public MonitorOutputStream getOutputStream() throws IOException {
         if (output == null) {
-            output = new MonitorOutputStream(super.getOutputStream());
+            output = new MonitorOutputStream(super.getOutputStream(), maxSize);
         }
         return output;
     }
@@ -56,11 +70,20 @@ public class MonitorServletResponse extends HttpServletResponseWrapper {
 
     static class MonitorOutputStream extends ServletOutputStream {
 
-        long nbytes;
+        ByteArrayOutputStream buffer;
+
         OutputStream delegate;
 
-        public MonitorOutputStream(OutputStream delegate) {
+        long nbytes;
+
+        long maxSize;
+
+        public MonitorOutputStream(OutputStream delegate, long maxSize) {
             this.delegate = delegate;
+            this.maxSize = maxSize;
+            if (maxSize != 0) {
+                buffer = new ByteArrayOutputStream();
+            }
         }
 
         public long getBytesWritten() {
@@ -69,18 +92,21 @@ public class MonitorServletResponse extends HttpServletResponseWrapper {
 
         @Override
         public void write(int b) throws IOException {
+            fill(b);
             delegate.write(b);
             ++nbytes;
         }
 
         @Override
         public void write(byte b[]) throws IOException {
+            fill(b, 0, b.length);
             delegate.write(b);
             nbytes += b.length;
         }
 
         @Override
         public void write(byte b[], int off, int len) throws IOException {
+            fill(b, off, len);
             delegate.write(b, off, len);
             nbytes += len;
         }
@@ -93,6 +119,35 @@ public class MonitorServletResponse extends HttpServletResponseWrapper {
         @Override
         public void close() throws IOException {
             delegate.close();
+        }
+
+        void fill(byte[] b, int off, int len) {
+            if (buffer != null && len >= 0 && !bufferIsFull()) {
+                if (maxSize > 0) {
+                    long residual = maxSize - buffer.size();
+                    len = len < residual ? len : (int) residual;
+                }
+                buffer.write(b, off, len);
+            }
+        }
+
+        void fill(int b) {
+            if (buffer != null && !bufferIsFull()) {
+                buffer.write(b);
+            }
+        }
+
+        boolean bufferIsFull() {
+            return maxSize == 0 || (buffer.size() >= maxSize && maxSize > 0);
+        }
+
+        public byte[] getData() {
+            return buffer == null ? new byte[0] : buffer.toByteArray();
+        }
+
+        public void dispose() {
+            buffer = null;
+            delegate = null;
         }
     }
 }

@@ -192,7 +192,7 @@ public class RequestControllerTest extends GeoServerSystemTestSupport {
         data.setPath("/foo");
         data.setStartTime(startTime);
         
-        data.setBody("<foo></foo>".getBytes());
+        data.setRequestBody("<foo></foo>".getBytes());
         data.setError(throwable);
         
         monitor.getDAO().dispose();
