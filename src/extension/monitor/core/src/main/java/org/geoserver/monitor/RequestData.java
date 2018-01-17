@@ -5,21 +5,20 @@
  */
 package org.geoserver.monitor;
 
+import org.geoserver.platform.ServiceException;
+import org.opengis.geometry.BoundingBox;
+
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.geoserver.platform.ServiceException;
-import org.opengis.geometry.BoundingBox;
-
 
 /**
- * The request object, a simple java bean that gathers all the information and data that is 
+ * The request object, a simple java bean that gathers all the information and data that is
  * monitored per request.
- * 
+ *
  * @author Andrea Aime, OpenGeo
  * @author Justin Deoliveira, OpenGeo
  */
@@ -28,23 +27,36 @@ public class RequestData implements Serializable {
     private static final long serialVersionUID = 4115701065212157258L;
 
     private static AtomicLong COUNTER = new AtomicLong();
-    
+
     /**
      * Enumeration describing the status of a request.
      */
     public static enum Status {
-        WAITING, RUNNING, CANCELLING, FAILED, FINISHED, CANCELLED, INTERRUPTED
-    };
+        WAITING,
+        RUNNING,
+        CANCELLING,
+        FAILED,
+        FINISHED,
+        CANCELLED,
+        INTERRUPTED
+    }
+
+    ;
 
     /**
      * Enumeration describing the category of a request.
      */
     public static enum Category {
-        OWS, REST, OTHER
-    };
-    
+        OWS,
+        REST,
+        OTHER
+    }
+
+    ;
+
     public long internalid = COUNTER.getAndIncrement();
-    
+
+    // TODO get rid of explicit ID type
     /**
      * request id
      */
@@ -54,17 +66,17 @@ public class RequestData implements Serializable {
      * Request status / state
      */
     private Status status = Status.WAITING;
-    
+
     /**
      * Request category
      */
     private Category category = Category.OTHER;
-    
+
     /**
      * The path of the request URL.
      */
     private String path;
-    
+
     /**
      * The query string that is contained in the request URL after the path, or {@code null} if the
      * URL does not have a query string.
@@ -75,12 +87,12 @@ public class RequestData implements Serializable {
      * The body of the response in the case of a PUT or POST
      */
     private byte[] requestBody;
-    
+
     /**
      * The length of the request requestBody in teh case of a PUT or POST
      */
     private long requestContentLength;
-    
+
     /**
      * The mime type of the request requestBody
      */
@@ -90,7 +102,7 @@ public class RequestData implements Serializable {
      * The body of the response in the case of a PUT or POST
      */
     private byte[] responseBody;
-    
+
     /**
      * The HTTP method of the request
      */
@@ -112,7 +124,7 @@ public class RequestData implements Serializable {
      * The total time, in milliseconds, the request took to complete
      */
     private long totalTime;
-    
+
     /**
      * The Internet Protocol (IP) address of the client or last proxy that sent the request.
      */
@@ -124,7 +136,7 @@ public class RequestData implements Serializable {
      * form of the IP address.
      */
     private String remoteHost;
-    
+
     /**
      * Username (if available) specified with the request
      */
@@ -139,22 +151,22 @@ public class RequestData implements Serializable {
      * Country request originated from (if available), obtained via geoip lookup.
      */
     private String remoteCountry;
-    
+
     /**
      * City request originated from (if available), obtained via geoip lookup
      */
     private String remoteCity;
-    
+
     /**
      * Latitude request originated from (if available), obtained via geoip lookup
      */
     private double remoteLat;
-    
+
     /**
      * Longitude request originated from (if available), obtained via geoip lookup
      */
     private double remoteLon;
-    
+
     /**
      * The server host (useful in case we are dealing with a cluster of GeoServer instances)
      */
@@ -164,7 +176,7 @@ public class RequestData implements Serializable {
      * The internal server host (to the internal network)
      */
     private String internalHost;
-    
+
     /**
      * The service name, in the case of ows this is WMS, WFS, WCS, WPS, etc...
      */
@@ -181,10 +193,10 @@ public class RequestData implements Serializable {
     private String owsVersion;
 
     /**
-     * The sub operation, example for WFS transaction being INSERT, UPDATE, etc... 
+     * The sub operation, example for WFS transaction being INSERT, UPDATE, etc...
      */
     private String subOperation;
-    
+
     /**
      * The requested resources
      */
@@ -209,17 +221,17 @@ public class RequestData implements Serializable {
      * The exception that occurred while processing the request, if any.
      */
     private Throwable error;
-    
+
     /**
      * The response status
      */
     Integer responseStatus;
-    
+
     /**
-     *  The Referer of the HTTP request, if any
+     * The Referer of the HTTP request, if any
      */
     private String httpReferer;
-    
+
     /**
      * A bounding box for the region the request covers if any (May be approximate)
      */
@@ -244,11 +256,11 @@ public class RequestData implements Serializable {
     public Category getCategory() {
         return category;
     }
-    
+
     public void setCategory(Category category) {
         this.category = category;
     }
-    
+
     public String getPath() {
         return path;
     }
@@ -267,7 +279,7 @@ public class RequestData implements Serializable {
 
     /**
      * The body of the HTTP response
-     *
+     * <p>
      * May be trimmed to a maximum length.  If so, check getRequestContentLength for the length of the
      * untrimmed body.
      */
@@ -296,7 +308,16 @@ public class RequestData implements Serializable {
     }
 
     public String getRequestBodyAsString() {
-        if(requestBody != null) {
+        if (requestBody != null) {
+            return new String(requestBody);
+        } else {
+            return null;
+        }
+    }
+
+    @Deprecated
+    public String getBodyAsString() {
+        if (requestBody != null) {
             return new String(requestBody);
         } else {
             return null;
@@ -305,7 +326,7 @@ public class RequestData implements Serializable {
 
     /**
      * The body of the HTTP request
-     *
+     * <p>
      * May be trimmed to a maximum length.  If so, check getResponseBodyContentLength for the length of the
      * untrimmed body.
      */
@@ -318,7 +339,7 @@ public class RequestData implements Serializable {
     }
 
     public String getResponseBodyAsString() {
-        if(responseBody != null) {
+        if (responseBody != null) {
             return new String(responseBody);
         } else {
             return null;
@@ -380,7 +401,7 @@ public class RequestData implements Serializable {
     public void setHost(String host) {
         this.host = host;
     }
-    
+
     public String getInternalHost() {
         return internalHost;
     }
@@ -388,7 +409,7 @@ public class RequestData implements Serializable {
     public void setInternalHost(String internalHost) {
         this.internalHost = internalHost;
     }
-    
+
     public String getRemoteUser() {
         return remoteUser;
     }
@@ -408,39 +429,39 @@ public class RequestData implements Serializable {
     public String getRemoteCountry() {
         return remoteCountry;
     }
-    
+
     public void setRemoteCountry(String remoteCountry) {
         this.remoteCountry = remoteCountry;
     }
-    
+
     public String getRemoteCity() {
         return remoteCity;
     }
-    
+
     public void setRemoteCity(String remoteCity) {
         this.remoteCity = remoteCity;
     }
-    
+
     public double getRemoteLat() {
         return remoteLat;
     }
-    
+
     public void setRemoteLat(double remoteLat) {
         this.remoteLat = remoteLat;
     }
-    
+
     public double getRemoteLon() {
         return remoteLon;
     }
-    
+
     public void setRemoteLon(double remoteLon) {
         this.remoteLon = remoteLon;
     }
-    
+
     public String getService() {
         return service;
     }
-    
+
     public void setService(String service) {
         this.service = service;
     }
@@ -448,11 +469,11 @@ public class RequestData implements Serializable {
     public String getOperation() {
         return operation;
     }
-    
+
     public void setOperation(String operation) {
         this.operation = operation;
     }
-    
+
     public String getOwsVersion() {
         return owsVersion;
     }
@@ -464,28 +485,28 @@ public class RequestData implements Serializable {
     public String getSubOperation() {
         return subOperation;
     }
-    
+
     public void setSubOperation(String subOperation) {
         this.subOperation = subOperation;
     }
-    
+
     public List<String> getResources() {
         return resources;
     }
-    
+
     public String getResourcesList() {
-        if(resources != null && resources.size() > 0) {
+        if (resources != null && resources.size() > 0) {
             String result = resources.toString();
-            return result.substring(1, result.length() - 1); 
+            return result.substring(1, result.length() - 1);
         } else {
             return null;
         }
     }
-    
+
     public void setResources(List<String> resources) {
         this.resources = resources;
     }
-    
+
     public long getResponseLength() {
         return responseLength;
     }
@@ -517,7 +538,7 @@ public class RequestData implements Serializable {
     public void setError(Throwable error) {
         this.error = error;
     }
-    
+
     public RequestData clone() {
         RequestData clone = new RequestData();
         clone.setId(id);
@@ -547,10 +568,10 @@ public class RequestData implements Serializable {
         clone.setResponseStatus(responseStatus);
         clone.setHttpReferer(httpReferer);
         clone.setBbox(bbox);
-     
+
         return clone;
     }
-    
+
     @Override
     public String toString() {
         return "Request (" + String.valueOf(id) + ")";
@@ -563,12 +584,12 @@ public class RequestData implements Serializable {
     public void setResponseStatus(Integer httpStatus) {
         this.responseStatus = httpStatus;
     }
-    
+
     public String getHttpReferer() {
         return httpReferer;
     }
-    
-    public void setHttpReferer(String httpReferer){
+
+    public void setHttpReferer(String httpReferer) {
         this.httpReferer = httpReferer;
     }
 

@@ -5,15 +5,6 @@
  */
 package org.geoserver.monitor;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Properties;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
 import org.geoserver.config.GeoServerPluginConfigurator;
 import org.geoserver.data.util.IOUtils;
 import org.geoserver.platform.GeoServerExtensions;
@@ -34,35 +25,47 @@ import org.opengis.referencing.crs.CoordinateReferenceSystem;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Properties;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 /**
  * Configuration object for monitor subsystem.
- * 
- * @author Justin Deoliveira, OpenGeo
  *
+ * @author Justin Deoliveira, OpenGeo
  */
 public class MonitorConfig implements GeoServerPluginConfigurator, ApplicationContextAware {
 
     protected static final String PROPERTYFILENAME = "monitor.properties";
-    private static final Logger LOGGER = Logging.getLogger(MonitorConfig.class);
+    private static final   Logger LOGGER           = Logging.getLogger(MonitorConfig.class);
 
     public static enum Mode {
-        HISTORY, LIVE,
+        HISTORY,
+        LIVE,
 
         @Deprecated // use live
-        HYBRID;
+                HYBRID;
     }
 
     public static enum BboxMode {
-        NONE, NO_WFS, FULL;
+        NONE,
+        NO_WFS,
+        FULL;
     }
-    
+
     protected Properties props;
     PropertyFileWatcher fw;
-    ApplicationContext context;
+    ApplicationContext  context;
     boolean enabled = true;
     Exception error;
     private GeoServerResourceLoader loader;
-    
+
     public MonitorConfig() {
         props = new Properties();
         props.put("storage", "memory");
@@ -74,14 +77,14 @@ public class MonitorConfig implements GeoServerPluginConfigurator, ApplicationCo
 
         //for backwards compatibility include the hibernate config options
         props.put("hibernate.sync", "async");
-        
+
         loader = GeoServerExtensions.bean(GeoServerResourceLoader.class);
     }
-    
+
     public MonitorConfig(GeoServerResourceLoader loader) throws IOException {
         this.loader = loader;
         Resource f = getConfigurationFile(loader);
-        
+
         fw = new PropertyFileWatcher(f);
     }
 
@@ -100,15 +103,18 @@ public class MonitorConfig implements GeoServerPluginConfigurator, ApplicationCo
         }
         return m;
     }
-    
+
     public long getMaxRequestBodySize() {
-        return Long.parseLong(props().getProperty("maxRequestBodySize", String.valueOf(1024)));
+        Properties props = props();
+        // maxBodySize - old property name
+        String maxRequestBodySize = props.getProperty("maxRequestBodySize", props.getProperty("maxBodySize", String.valueOf(1024)));
+        return Long.parseLong(maxRequestBodySize);
     }
 
     public long getMaxResponseBodySize() {
         return Long.parseLong(props().getProperty("maxResponseBodySize", String.valueOf(1024)));
     }
-    
+
     public CoordinateReferenceSystem getBboxCrs() {
         Properties props = props();
         String srs = props.getProperty("bboxCrs");
@@ -125,7 +131,7 @@ public class MonitorConfig implements GeoServerPluginConfigurator, ApplicationCo
         }
         return null;
     }
-    
+
     public BboxMode getBboxMode() {
         Properties props = props();
         String mode = props.getProperty("bboxMode");
@@ -138,27 +144,27 @@ public class MonitorConfig implements GeoServerPluginConfigurator, ApplicationCo
         }
         return BboxMode.valueOf(mode.toUpperCase());
     }
-    
+
     public boolean isEnabled() {
         return enabled;
     }
-    
+
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;
     }
-    
+
     public Exception getError() {
         return error;
     }
-    
+
     public void setError(Exception error) {
         this.error = error;
     }
-    
+
     public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
         this.context = applicationContext;
     }
-    
+
     public MonitorDAO createDAO() {
         MonitorDAO dao = null;
 
@@ -183,9 +189,9 @@ public class MonitorConfig implements GeoServerPluginConfigurator, ApplicationCo
             }
         }
         if (dao == null) {
-            LOGGER.warning("monitoring storage "+storage+" " +
+            LOGGER.warning("monitoring storage " + storage + " " +
                     "not found, falling back to '"
-                + MemoryMonitorDAO.NAME +"'");
+                    + MemoryMonitorDAO.NAME + "'");
             dao = new MemoryMonitorDAO();
         }
 
@@ -196,11 +202,10 @@ public class MonitorConfig implements GeoServerPluginConfigurator, ApplicationCo
     /**
      * Allows to retrieve a generic property from the configuration. Extensions and plugins are
      * supposed to use the plugin.property naming convention, passing both a prefix and a name
-     * 
-     * @param prefix namespace prefix
-     * @param name name
-     * @param target Class for conversion
      *
+     * @param prefix namespace prefix
+     * @param name   name
+     * @param target Class for conversion
      */
     public <T> T getProperty(String prefix, String name, Class<T> target) {
         String key = prefix == null ? name : prefix + "." + name;
@@ -218,7 +223,7 @@ public class MonitorConfig implements GeoServerPluginConfigurator, ApplicationCo
         }
     }
 
-    
+
     Properties props() {
         if (fw != null && fw.isModified()) {
             synchronized (this) {
@@ -230,8 +235,7 @@ public class MonitorConfig implements GeoServerPluginConfigurator, ApplicationCo
                         if (props.getProperty("sync") != null) {
                             props.setProperty("hibernate.sync", props.getProperty("sync"));
                         }
-                    } 
-                    catch (IOException e) {
+                    } catch (IOException e) {
                         throw new RuntimeException(e);
                     }
                 }
@@ -261,7 +265,7 @@ public class MonitorConfig implements GeoServerPluginConfigurator, ApplicationCo
     public Resource getConfigurationFile(GeoServerResourceLoader loader) throws IOException {
         Resource f = loader.get(Paths.path("monitoring", MonitorConfig.PROPERTYFILENAME));
         if (!Resources.exists(f)) {
-            IOUtils.copy(MonitorConfig.class.getResourceAsStream(MonitorConfig.PROPERTYFILENAME), 
+            IOUtils.copy(MonitorConfig.class.getResourceAsStream(MonitorConfig.PROPERTYFILENAME),
                     f.out());
         }
         return f;
@@ -271,10 +275,10 @@ public class MonitorConfig implements GeoServerPluginConfigurator, ApplicationCo
     public void saveConfiguration(GeoServerResourceLoader resourceLoader) throws IOException {
         if (loader != null) {
             Resource f = getConfigurationFile(loader);
-        
-            Resource targetDir = 
+
+            Resource targetDir =
                     Files.asResource(resourceLoader.findOrCreateDirectory(Paths.convert(loader.getBaseDirectory(), f.parent().dir())));
-            
+
             Resources.copy(f.file(), targetDir);
         } else if (fw != null && fw.getResource() != null) {
             Resources.copy(fw.getFile(), Files.asResource(resourceLoader.getBaseDirectory()));
@@ -300,5 +304,5 @@ public class MonitorConfig implements GeoServerPluginConfigurator, ApplicationCo
             }
         }
     }
-    
+
 }
