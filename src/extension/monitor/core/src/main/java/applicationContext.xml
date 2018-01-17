@@ -22,7 +22,7 @@
       <constructor-arg ref="resourceLoader"/>
     </bean>
     
-    <bean id="monitorConfig" class="org.geoserver.monitor.MonitorConfig">
+    <bean id="monitorConfig" class="org.geoserver.monitor.MonitorConfig" depends-on="extensions">
        <constructor-arg ref="resourceLoader"/>
     </bean>
     

@@ -9,6 +9,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.sql.SQLFeatureNotSupportedException;
 import java.util.Map;
 import java.util.Properties;
 import java.util.logging.Level;
@@ -182,4 +183,9 @@ public class MonitoringDataSource extends BasicDataSource implements DisposableB
 	public void destroy() throws Exception {
 		super.close();
 	}
+
+    @Override
+    public Logger getParentLogger() throws SQLFeatureNotSupportedException {
+        return LOGGER;
+    }
 }

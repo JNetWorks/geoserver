@@ -183,7 +183,8 @@ public class MonitorConfig implements GeoServerPluginConfigurator, ApplicationCo
             }
         }
         if (dao == null) {
-            LOGGER.warning("monitoring storage "+storage+" not found, falling back to '"
+            LOGGER.warning("monitoring storage "+storage+" " +
+                    "not found, falling back to '"
                 + MemoryMonitorDAO.NAME +"'");
             dao = new MemoryMonitorDAO();
         }

@@ -86,6 +86,7 @@
  <modules>
    <module>core</module>
    <module>hibernate</module>
+   <module>mongodb</module>
  </modules>
 
 </project>

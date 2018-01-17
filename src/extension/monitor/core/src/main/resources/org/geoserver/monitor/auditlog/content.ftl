@@ -8,14 +8,14 @@
    <Path>${path!""}</Path>
    <QueryString>${queryString!""}</QueryString>
    <#if requestBodyAsString??>
-   <RequestBody>
-      ${requestBodyAsString}
-   </RequestBody>
+   <#noescape>
+   <RequestBody>[!CDATA[${requestBodyAsString}]]</RequestBody>
+   </#noescape>
    </#if>
    <#if responseBodyAsString??>
-   <ResponseBody>
-      ${responseBodyAsString}
-   </ResponseBody>
+   <#noescape>
+   <ResponseBody>[!CDATA[${responseBodyAsString}]]</ResponseBody>
+   </#noescape>
    </#if>
    <HttpMethod>${httpMethod!""}</HttpMethod>
    <StartTime>${startTime?datetime?iso_utc_ms}</StartTime>

@@ -178,7 +178,7 @@ public class MonitorRequestController extends RestBaseController {
             return new MonitorQueryResults(q, fields, monitor);
         } else {
             // return the individual
-            RequestData data = monitor.getDAO().getRequest(Long.parseLong(req));
+            RequestData data = monitor.getDAO().getRequest(req);
             if (data == null) {
                 throw new ResourceNotFoundException("No such request" + req);
             }

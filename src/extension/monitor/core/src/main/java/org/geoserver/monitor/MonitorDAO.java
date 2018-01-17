@@ -22,7 +22,7 @@ public interface MonitorDAO {
     
     void save(RequestData data);
     
-    RequestData getRequest(long id);
+    RequestData getRequest(Object id);
     
     List<RequestData> getRequests();
     

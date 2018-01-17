@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+    http://www.springframework.org/schema/beans/spring-beans.xsd"
+       default-autowire="byName">
+
+    <!--
+    data source with a runtime fallback that will make it work against an H2 stored in the data dir 
+    if not configured before
+    -->
+    <bean id="monitorDataSource" class="org.geoserver.monitor.mongo.MonitoringDataSource" depends-on="geoServerLoader">
+        <property name="dataDirectory" ref="dataDirectory"/>
+        <property name="config" ref="monitorConfig"/>
+    </bean>
+
+    <!-- monitor daos -->
+    <import resource="applicationContext-mongo.xml"/>
+
+    <bean id="monitorMongoInitializer" class="org.geoserver.monitor.mongo.MonitorMongoInitializer">
+        <constructor-arg ref="monitor"/>
+    </bean>
+</beans>

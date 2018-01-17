@@ -7,6 +7,7 @@ package org.geoserver.monitor;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
@@ -578,6 +579,4 @@ public class RequestData implements Serializable {
     public void setBbox(BoundingBox bbox) {
         this.bbox = bbox;
     }
-    
-    
 }

@@ -50,7 +50,7 @@ class DummyMonitorDAO implements MonitorDAO {
     public void getRequests(Query query, RequestDataVisitor visitor) {
     }
     
-    public RequestData getRequest(long id) {
+    public RequestData getRequest(Object id) {
         return null;
     }
     

@@ -34,17 +34,17 @@ public abstract class MonitorDAOTestSupport{
     
     @Test
     public void testUpdate() throws Exception {
-        RequestData data = dao.getRequest(1);
+        RequestData data = dao.getRequest("1");
         data.setPath("/one_updated");
         dao.update(data);
         
-        data = dao.getRequest(1);
+        data = dao.getRequest("1");
         assertEquals("/one_updated", data.getPath());
         
         data.getResources().add("one_layer");
         dao.update(data);
         
-        data = dao.getRequest(1);
+        data = dao.getRequest("1");
         assertEquals(1, data.getResources().size());
         
         assertEquals("one_layer", data.getResources().get(0));
@@ -82,8 +82,8 @@ public abstract class MonitorDAOTestSupport{
     
     @Test
     public void testGetRequestById() throws Exception {
-        assertTrue(dao.getRequest(8) != null);
-        assertEquals("/eight", dao.getRequest(8).getPath());
+        assertTrue(dao.getRequest("8") != null);
+        assertEquals("/eight", dao.getRequest("8").getPath());
     }
     
     @Test

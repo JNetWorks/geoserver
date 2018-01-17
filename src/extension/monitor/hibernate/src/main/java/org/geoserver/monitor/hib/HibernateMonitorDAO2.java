@@ -151,8 +151,8 @@ public class HibernateMonitorDAO2 implements MonitorDAO , DisposableBean {
         throw new UnsupportedOperationException();
     }
 
-    public RequestData getRequest(long id) {
-        return (RequestData) hib.get(RequestData.class, id);
+    public RequestData getRequest(Object id) {
+        return (RequestData) hib.get(RequestData.class, Long.parseLong((String) id));
     }
 
     @SuppressWarnings("unchecked")
