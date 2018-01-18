@@ -31,9 +31,13 @@
     </bean>
 
     <!-- the top level monitoring filter -->
-    <bean id="monitorFilter" class="org.geoserver.monitor.MonitorFilter">
+    <bean id="monitorFilter" class="org.geoserver.monitor.MonitorExcludeFilter">
         <constructor-arg ref="monitor"/>
-        <constructor-arg ref="monitorRequestFilter"/>
+        <constructor-arg>
+            <list>
+                <ref bean="monitorRequestFilter"/>
+            </list>
+        </constructor-arg>
     </bean>
     
     <!-- rest bindings -->

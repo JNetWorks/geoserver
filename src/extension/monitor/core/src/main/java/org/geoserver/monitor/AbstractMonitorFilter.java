@@ -23,7 +23,6 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.net.URLDecoder;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -31,71 +30,76 @@ import java.util.concurrent.Executors;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class MonitorFilter implements GeoServerFilter {
+public abstract class AbstractMonitorFilter implements GeoServerFilter {
 
-    
+
     static Logger LOGGER = Logging.getLogger("org.geoserver.monitor");
-    
+
     Monitor monitor;
-    MonitorRequestFilter requestFilter;
-    
+
     ExecutorService postProcessExecutor;
-    
-    public MonitorFilter(Monitor monitor, MonitorRequestFilter requestFilter) {
+
+    public AbstractMonitorFilter(Monitor monitor) {
         this.monitor = monitor;
-        this.requestFilter = requestFilter;
-        
+
         postProcessExecutor = Executors.newFixedThreadPool(2);
-        
+
         if (monitor.isEnabled()) {
-            LOGGER.info("Monitor extension enabled");    
-        }
-        else {
-            String msg ="Monitor extension disabled";
+            LOGGER.info("Monitor extension enabled");
+        } else {
+            String msg = "Monitor extension disabled";
             if (monitor.getConfig().getError() != null) {
                 msg += ": " + monitor.getConfig().getError().getLocalizedMessage();
             }
             LOGGER.info(msg);
         }
     }
-    
+
     public void init(FilterConfig filterConfig) throws ServletException {
     }
-    
-    
+
+    /**
+     * Whether request should be monitored or not.
+     *
+     * @param request {@link HttpServletRequest} request
+     * @return true is request should be monitored, false otherwise
+     */
+    abstract boolean monitorRequest(HttpServletRequest request) throws IOException;
+
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
-            throws IOException, ServletException {
-        
-        
+            throws IOException, ServletException
+    {
+
+
         //check if enabled, and ignore non http requests
         if (!monitor.isEnabled() || !(request instanceof HttpServletRequest)) {
             chain.doFilter(request, response);
             return;
         }
-        
+
         HttpServletRequest req = (HttpServletRequest) request;
         HttpServletResponse resp = (HttpServletResponse) response;
-        
-        if (requestFilter.filter(req)) {
+
+        if (!monitorRequest(req)) {
             if (LOGGER.isLoggable(Level.FINE)) {
-                LOGGER.fine(req.getRequestURI() + " was filtered from monitoring");
+                LOGGER.fine(req.getRequestURI() + " was not monitored");
             }
             //don't monitor this request
             chain.doFilter(request, response);
             return;
         }
-        
+
         //start a new request
         RequestData data = monitor.start();
         data.setStartTime(new Date());
-        
+
         //fill in the initial data
         data.setPath(req.getServletPath() + req.getPathInfo());
-        
+
         if (req.getQueryString() != null) {
             data.setQueryString(URLDecoder.decode(req.getQueryString(), "UTF-8"));
         }
-        
+
         data.setHttpMethod(req.getMethod());
         data.setRequestContentLength(req.getContentLength());
         data.setRequestContentType(req.getContentType());
@@ -111,7 +115,8 @@ public class MonitorFilter implements GeoServerFilter {
         data.setHttpReferer(getHttpReferer(req));
 
         if (SecurityContextHolder.getContext() != null
-                && SecurityContextHolder.getContext().getAuthentication() != null) {
+                && SecurityContextHolder.getContext().getAuthentication() != null)
+        {
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
             Object principal = auth.getPrincipal();
             if (principal != null) {
@@ -140,8 +145,7 @@ public class MonitorFilter implements GeoServerFilter {
         Throwable error = null;
         try {
             chain.doFilter(request, response);
-        }
-        catch(Throwable t) {
+        } catch (Throwable t) {
             error = t;
         }
 
@@ -177,9 +181,8 @@ public class MonitorFilter implements GeoServerFilter {
 
         if (error != null) {
             if (error instanceof RuntimeException) {
-                throw (RuntimeException)error;
-            }
-            else {
+                throw (RuntimeException) error;
+            } else {
                 throw new RuntimeException(error);
             }
         }
@@ -199,50 +202,48 @@ public class MonitorFilter implements GeoServerFilter {
             return req.getRemoteAddr();
         }
     }
-    
+
     String getHttpReferer(HttpServletRequest req) {
         String referer = req.getHeader("Referer");
-        
+
         // "Referer" is in the HTTP spec, but "Referrer" is the correct English spelling.
         // This falls back to the "correct" spelling if the specified one was not used.
-        if(referer==null)
+        if (referer == null)
             referer = req.getHeader("Referrer");
-        
+
         return referer;
     }
 
     static class PostProcessTask implements Runnable {
 
-        Monitor monitor;
-        RequestData data;
-        HttpServletRequest request;
+        Monitor             monitor;
+        RequestData         data;
+        HttpServletRequest  request;
         HttpServletResponse response;
-        
+
         PostProcessTask(Monitor monitor, RequestData data, HttpServletRequest request, HttpServletResponse response) {
             this.monitor = monitor;
             this.data = data;
             this.request = request;
             this.response = response;
         }
-        
+
         public void run() {
             try {
                 List<RequestPostProcessor> pp = new ArrayList();
                 pp.add(new ReverseDNSPostProcessor());
                 pp.addAll(GeoServerExtensions.extensions(RequestPostProcessor.class));
-                
+
                 for (RequestPostProcessor p : pp) {
                     try {
                         p.run(data, request, response);
-                    }
-                    catch(Exception e) {
+                    } catch (Exception e) {
                         LOGGER.log(Level.WARNING, "Post process task failed", e);
                     }
                 }
 
                 monitor.postProcessed(data);
-            }
-            finally {
+            } finally {
                 monitor = null;
                 data = null;
                 request = null;

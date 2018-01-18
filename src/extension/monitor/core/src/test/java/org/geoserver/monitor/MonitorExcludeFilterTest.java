@@ -9,6 +9,7 @@ import static org.junit.Assert.*;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.util.Arrays;
 import java.util.Collections;
 
 import javax.servlet.ServletException;
@@ -33,11 +34,11 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 
-public class MonitorFilterTest {
+public class MonitorExcludeFilterTest {
     
-    DummyMonitorDAO dao;
-    MonitorFilter filter;
-    MockFilterChain chain;
+    DummyMonitorDAO      dao;
+    MonitorExcludeFilter filter;
+    MockFilterChain      chain;
     
     static final int MAX_REQUEST_BODY_SIZE  = 10;
     static final int LONG_REQUEST_BODY_SIZE = 3* MAX_REQUEST_BODY_SIZE;
@@ -48,8 +49,8 @@ public class MonitorFilterTest {
     @Before
     public void setUp() throws Exception {
         dao = new DummyMonitorDAO();
-        
-        filter = new MonitorFilter(new Monitor(dao), new MonitorRequestFilter());
+
+        filter = new MonitorExcludeFilter(new Monitor(dao), Arrays.asList(new MonitorRequestFilter()));
         
         chain = new MockFilterChain(new HttpServlet() {
             @Override
