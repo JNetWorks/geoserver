@@ -32,7 +32,6 @@ import java.util.logging.Logger;
 
 public abstract class AbstractMonitorFilter implements GeoServerFilter {
 
-
     static Logger LOGGER = Logging.getLogger("org.geoserver.monitor");
 
     Monitor monitor;

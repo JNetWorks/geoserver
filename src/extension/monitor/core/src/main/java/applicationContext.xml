@@ -18,10 +18,6 @@
       <constructor-arg ref="monitor"/>
     </bean>
     
-    <bean id="monitorRequestFilter" class="org.geoserver.monitor.MonitorRequestFilter">
-      <constructor-arg ref="resourceLoader"/>
-    </bean>
-    
     <bean id="monitorConfig" class="org.geoserver.monitor.MonitorConfig" depends-on="extensions">
        <constructor-arg ref="resourceLoader"/>
     </bean>
@@ -30,14 +26,23 @@
       <constructor-arg ref="monitorConfig"/>
     </bean>
 
+    <!--<bean id="monitorRequestFilter" class="org.geoserver.monitor.MonitorRequestFilter">-->
+        <!--<constructor-arg ref="resourceLoader"/>-->
+    <!--</bean>-->
+
     <!-- the top level monitoring filter -->
-    <bean id="monitorFilter" class="org.geoserver.monitor.MonitorExcludeFilter">
+    <!--<bean id="monitorFilter" class="org.geoserver.monitor.MonitorExcludeFilter">-->
+        <!--<constructor-arg ref="monitor"/>-->
+        <!--<constructor-arg>-->
+            <!--<list>-->
+                <!--<ref bean="monitorRequestFilter"/>-->
+            <!--</list>-->
+        <!--</constructor-arg>-->
+    <!--</bean>-->
+
+    <bean id="monitorFilter" class="org.geoserver.monitor.AdvancedMonitorFilter">
         <constructor-arg ref="monitor"/>
-        <constructor-arg>
-            <list>
-                <ref bean="monitorRequestFilter"/>
-            </list>
-        </constructor-arg>
+        <constructor-arg ref="resourceLoader"/>
     </bean>
     
     <!-- rest bindings -->

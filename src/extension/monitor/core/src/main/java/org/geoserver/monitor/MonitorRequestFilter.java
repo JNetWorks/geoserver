@@ -11,6 +11,7 @@ import org.geoserver.platform.resource.Paths;
 import org.geoserver.platform.resource.Resource;
 import org.geoserver.platform.resource.Resource.Type;
 import org.geoserver.util.IOUtils;
+import org.springframework.util.AntPathMatcher;
 
 import javax.servlet.http.HttpServletRequest;
 import java.io.BufferedReader;
@@ -20,7 +21,6 @@ import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
-import java.util.regex.Pattern;
 
 import static org.geoserver.monitor.MonitorExcludeFilter.LOGGER;
 
@@ -97,7 +97,8 @@ public class MonitorRequestFilter implements RequestFilter {
      */
     static class Filter {
 
-        Pattern pattern;
+        AntPathMatcher matcher = new AntPathMatcher();
+        String pattern;
 
         /**
          * Filter based on request path.
@@ -105,7 +106,7 @@ public class MonitorRequestFilter implements RequestFilter {
          * @param pattern AntPathMatcher pattern
          */
         Filter(String pattern) {
-            this.pattern = Pattern.compile(pattern);
+            this.pattern = pattern;
         }
 
         /**
@@ -115,7 +116,7 @@ public class MonitorRequestFilter implements RequestFilter {
          * @return Request path match
          */
         boolean matches(String path) {
-            return pattern.matcher(path).matches();
+            return matcher.match(pattern, path);
         }
     }
 }

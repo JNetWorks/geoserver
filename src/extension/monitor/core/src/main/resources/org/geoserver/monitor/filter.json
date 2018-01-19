@@ -1,0 +1,29 @@
+{
+  "filters": [
+    {
+      "type": "include",
+      "path": "/**",
+      "query": {}
+    },
+    {
+      "type": "exclude",
+      "path": "/rest/monitor/**",
+      "query": {}
+    },
+    {
+      "type": "exclude",
+      "path": "/web",
+      "query": {}
+    },
+    {
+      "type": "exclude",
+      "path": "/web/**",
+      "query": {}
+    },
+    {
+      "type": "exclude",
+      "path": "/pdf/**",
+      "query": {}
+    }
+  ]
+}
